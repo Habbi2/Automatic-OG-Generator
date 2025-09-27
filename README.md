@@ -160,3 +160,103 @@ If you extend tokens, prefer additive changes (new `--color-*` or spacing steps)
 
 ## License
 MIT
+
+## Deployment (Vercel)
+
+The project is optimized for Vercel’s serverless functions using `puppeteer-core` + `@sparticuz/chromium`.
+
+### 1. Fork / Clone
+```
+git clone https://github.com/Habbi2/Automatic-OG-Generator.git
+cd Automatic-OG-Generator/automatic-og-generator
+```
+
+### 2. Install & Build Locally
+```
+npm install
+npm run build
+```
+Run dev to sanity check:
+```
+npm run dev
+```
+Visit: http://localhost:3000/api/capture?url=https://example.com&debug=1
+
+### 3. Vercel Project
+Create a new Vercel project and import this subfolder (`automatic-og-generator`). Ensure the **Root Directory** is set correctly if the monorepo has multiple apps.
+
+### 4. Environment Variables
+Add (optional but recommended):
+
+| Name | Purpose | Example |
+|------|---------|---------|
+| `ALLOWED_HOST_PATTERN` | Regex limiting which target hostnames can be captured (prevents abuse / arbitrary SSRF-style capture) | `^(?:www\.)?(example|yourdomain)\.com$` |
+
+If omitted, any public HTTPS host (still filtered against private / localhost ranges) is allowed. Use anchored regexes: start (`^`) and end (`$`) to avoid partial matches. Multiple domains can be grouped using `(?:a|b)`.
+
+### 5. Function Sizing
+`vercel.json` already pins memory + maxDuration per heavy route:
+```json
+{
+	"version": 2,
+	"functions": {
+		"app/api/capture/route.ts": { "memory": 1024, "maxDuration": 20 },
+		"app/api/overlay-capture/route.ts": { "memory": 1024, "maxDuration": 20 },
+		"app/api/batch/route.ts": { "memory": 1536, "maxDuration": 40 }
+	},
+	"routes": [
+		{ "src": "/health", "dest": "/api/capture?url=https://example.com&debug=1" }
+	]
+}
+```
+Adjust if you experience timeouts (e.g. increase `maxDuration` slightly). Batch routes naturally require more memory/time.
+
+### 6. Chromium Execution
+No custom binary path is required on Vercel—`@sparticuz/chromium` supplies arguments & executable. You can force the full bundled Chrome locally using `engine=full` for parity tests.
+
+### 7. Testing After Deploy
+Use the debug endpoint first:
+```
+https://<your-deployment>.vercel.app/api/capture?url=https://example.com&debug=1
+```
+Confirm fields: `executablePath`, `browserMode`, and that no error phase is reported.
+
+Then try a real capture:
+```
+https://<host>/api/capture?url=https://example.com&w=1200&h=630
+```
+Overlay sample:
+```
+https://<host>/api/capture?url=https://example.com&overlay=1&title=Launch&subtitle=Now&accent=%230ea5e9,%231d4ed8&autosize=1
+```
+Batch sample:
+```
+https://<host>/api/batch?url=https://example.com&preset=social&overlay=1&title=Hello
+```
+
+### 8. Caching / CDN
+Responses are not aggressively cached by default (dynamic). For frequently reused URLs consider adding a proxy layer or introducing a future `cache=1` parameter with a hash key stored in KV/object storage.
+
+### 9. Abuse Mitigation
+Current safeguards:
+* Protocol + private IP blocking.
+* Optional hostname regex allowlist (`ALLOWED_HOST_PATTERN`).
+* Dimension clamping & navigation timeout.
+Recommended enhancements (not yet built-in):
+* HMAC signature on query string (server verifies).
+* IP-based minimal rate limiting (Edge Middleware + Upstash/Vercel KV).
+* Response caching of identical URL + param hashes.
+
+### Common Deployment Issues
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Timeout on batch | Too many sizes / dynamic site slow | Increase memory/time or reduce sizes |
+| Blank image | Page heavy JS; needed more wait | Add `delay=1000` or change `wait=load` |
+| 403/431 static pre-capture | Site rejects headless UA | Allow fallback by omitting `mode=static` or use live (default) |
+| ECONNRESET sporadic | Remote site connection instability | Add small `delay`, consider retry externally |
+
+### Production Monitoring Ideas
+Add a scheduled cron (Vercel Cron) to hit `/health` and page if non-200. Extend debug output to log structured metrics to a logging service (e.g. Axiom, Logtail) for latency + failure phase distribution.
+
+---
+If you implement signing, rate limiting, or persistent caching, update this section so consumers know the security guarantees.
