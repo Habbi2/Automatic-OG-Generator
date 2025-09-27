@@ -1,0 +1,84 @@
+/* Design Tokens: Flat & Elegant */
+/* Root scales */
+:root {
+	/* Colors (dark theme baseline) */
+	--color-bg: #0d1117;
+	--color-bg-alt: #161b22;
+	--color-surface: #1b2230;
+	--color-border: #242c37;
+	--color-border-strong: #2f3945;
+	--color-accent: #6366f1;
+	--color-accent-alt: #8b5cf6;
+	--color-text: #f1f5f9;
+	--color-text-dim: #94a3b8;
+	--color-danger: #ef4444;
+	--color-focus: #f59e0b;
+
+	/* Elevation */
+	--shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+	--shadow-md: 0 2px 4px -1px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.35);
+
+	/* Radii */
+	--radius-xs: 4px;
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+
+	/* Typography */
+	--font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	--text-xs: 11px;
+	--text-sm: 13px;
+	--text-md: 15px;
+	--text-lg: 18px;
+	--text-xl: 22px;
+	--text-2xl: clamp(32px,5vw,44px);
+
+	/* Spacing scale */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-10: 40px;
+	--space-12: 48px;
+
+	/* Form */
+	--field-bg: var(--color-bg-alt);
+	--field-border: var(--color-border);
+	--field-border-focus: var(--color-accent);
+	--field-ring: 0 0 0 1px var(--color-accent), 0 0 0 4px rgba(99,102,241,0.25);
+	--focus-outline: 2px solid var(--color-focus);
+
+	/* Transitions */
+	--dur-fast: 120ms;
+	--easing: cubic-bezier(.4,.24,.3,1);
+}
+
+/* Light theme (prepared) */
+[data-theme='light'] {
+	--color-bg: #f8fafc;
+	--color-bg-alt: #f1f5f9;
+	--color-surface: #ffffff;
+	--color-border: #d8dee7;
+	--color-border-strong: #c9d2dd;
+	--color-accent: #4f46e5;
+	--color-accent-alt: #6366f1;
+	--color-text: #0f172a;
+	--color-text-dim: #64748b;
+	--color-danger: #dc2626;
+	--color-focus: #d97706;
+	--field-bg: var(--color-bg-alt);
+	--field-border: var(--color-border);
+	--field-border-focus: var(--color-accent);
+	--field-ring: 0 0 0 1px var(--color-accent), 0 0 0 4px rgba(79,70,229,0.25);
+}
+
+/* Utility helpers (minimal) */
+.u-flex { display:flex; }
+.u-grid { display:grid; }
+.u-gap-2 { gap: var(--space-2); }
+.u-gap-4 { gap: var(--space-4); }
+.u-text-dim { color: var(--color-text-dim); }
