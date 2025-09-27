@@ -82,32 +82,36 @@ export async function GET(req: NextRequest) {
         attempted,
         env: process.env.CHROME_PATH || null,
         platform: process.platform,
-        versions: { node: process.version }
+        versions: { node: process.version },
+        chromiumVersion: (chromium as any).version || null,
+        headless: usingFull ? 'new' : (chromium as any).headless ?? 'new'
       }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' }});
     }
-    const baseArgs = [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--disable-background-networking',
-      '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding',
-      '--hide-scrollbars',
-      '--disable-breakpad',
-      '--disable-client-side-phishing-detection',
-      '--disable-component-update',
-      '--disable-default-apps',
-      '--mute-audio'
-    ];
-    const launchArgs = usingFull ? baseArgs : [...chromium.args, ...baseArgs];
     const p = usingFull && puppeteerFull ? puppeteerFull : puppeteerCore;
+    async function launchBrowser(primary = true) {
+      const args = usingFull
+        ? ['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']
+        : chromium.args; // rely on maintained arg list
+      return await p.launch({
+        args,
+        defaultViewport: { width: w, height: h },
+        executablePath,
+        headless: usingFull ? 'new' : (chromium as any).headless ?? 'new'
+      });
+    }
     phase = 'launch';
-    browser = await p.launch({
-      args: launchArgs,
-      defaultViewport: { width: w, height: h },
-      executablePath: executablePath,
-      headless: 'new'
-    });
+    try {
+      browser = await launchBrowser(true);
+    } catch (err: any) {
+      const msg = String(err?.message || '');
+      if (/libnspr4\.so|failed to launch/i.test(msg) && !usingFull) {
+        // retry once (cold extract race or ephemeral fs issue)
+        phase = 'launch-retry';
+        browser = await launchBrowser(false);
+      } else {
+        throw err;
+      }
+    }
     phase = 'newPage';
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(15000);
